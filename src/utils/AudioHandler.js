@@ -77,10 +77,11 @@ export class AudioHandler {
   }
 
   playMorseSequence(sequence) {
-      // Play a full sequence like ".-"
+      // Play a full sequence like ".-" with improved audio quality
       this.init();
       let time = this.audioContext.currentTime;
-      const dot = 0.06; // 60ms
+      const dot = 0.08; // 80ms - closer to typical morse timing
+      const freq = 650; // 650Hz - more pleasant frequency similar to 360.mp3
       
       sequence.split('').forEach(symbol => {
           const osc = this.audioContext.createOscillator();
@@ -88,13 +89,18 @@ export class AudioHandler {
           osc.connect(gain);
           gain.connect(this.audioContext.destination);
           
-          osc.frequency.value = 600;
+          osc.frequency.value = freq;
+          osc.type = 'sine'; // Smooth sine wave
           const duration = symbol === '.' ? dot : dot * 3;
           
+          // Smooth envelope to avoid clicks
+          gain.gain.setValueAtTime(0, time);
+          gain.gain.linearRampToValueAtTime(0.3, time + 0.005); // Soft attack
+          gain.gain.setValueAtTime(0.3, time + duration - 0.01);
+          gain.gain.linearRampToValueAtTime(0, time + duration); // Soft release
+          
           osc.start(time);
-          gain.gain.setValueAtTime(1, time);
-          gain.gain.setTargetAtTime(0, time + duration, 0.005);
-          osc.stop(time + duration + 0.005);
+          osc.stop(time + duration + 0.001);
           
           time += duration + dot; // Inter-symbol gap
       });
