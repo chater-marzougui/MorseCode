@@ -12,6 +12,10 @@ export class AudioHandler {
     // For decoding
     this.threshold = 0.5; // Amplitude threshold
     this.sampleRate = 44100;
+    
+    // Fallback timing ratios for when clustering fails
+    this.DOT_FALLBACK_RATIO = 0.5;
+    this.DASH_FALLBACK_RATIO = 1.5;
   }
 
   init() {
@@ -220,10 +224,10 @@ export class AudioHandler {
       // Calculate average for each category, with fallbacks
       const dotDuration = shortPulses.length > 0 ? 
         shortPulses.reduce((a, b) => a + b, 0) / shortPulses.length : 
-        medianPulse * 0.5;
+        medianPulse * this.DOT_FALLBACK_RATIO;
       const dashDuration = longPulses.length > 0 ? 
         longPulses.reduce((a, b) => a + b, 0) / longPulses.length : 
-        medianPulse * 1.5;
+        medianPulse * this.DASH_FALLBACK_RATIO;
       
       // Analyze gaps more carefully
       const medianGap = sortedGaps.length > 0 ? sortedGaps[Math.floor(sortedGaps.length / 2)] : dotDuration;
