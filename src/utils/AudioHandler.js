@@ -1,4 +1,4 @@
-import { DOT_DURATION_MS } from './morseConstants';
+import { DOT_DURATION_MS } from './morseConstants.js';
 
 export class AudioHandler {
   constructor() {

@@ -54,6 +54,17 @@ npm run preview
 npm run lint
 ```
 
+### Testing
+
+```bash
+# Run rapid test (documents production decoding logic)
+npm test
+
+# For actual audio decoding test:
+# 1. npm run dev
+# 2. Open browser and upload 360.mp3
+```
+
 ## Deployment
 
 This project is configured for automatic deployment to GitHub Pages via GitHub Actions.
