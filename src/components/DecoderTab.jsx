@@ -101,11 +101,11 @@ const DecoderTab = () => {
       const duration = now - signalState.current.startTime;
       signalState.current.lastOffTime = now;
       
-      // Noise filtering with ±25% tolerance (wider to account for real-time timing variance)
-      const dotMin = timingParams.dotDuration * 0.75;
-      const dotMax = timingParams.dotDuration * 1.25;
-      const dashMin = timingParams.dashDuration * 0.75;
-      const dashMax = timingParams.dashDuration * 1.25;
+      // Noise filtering with ±30% tolerance (wider to account for real-time timing variance)
+      const dotMin = timingParams.dotDuration * 0.7;
+      const dotMax = timingParams.dotDuration * 1.3;
+      const dashMin = timingParams.dashDuration * 0.7;
+      const dashMax = timingParams.dashDuration * 1.3;
       
       // Check if duration fits either dot or dash range
       const isDot = duration >= dotMin && duration <= dotMax;
