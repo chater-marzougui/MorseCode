@@ -119,7 +119,7 @@ const DecoderTab = () => {
         console.log(`✓ DASH: ${duration.toFixed(0)}ms (expected: ${timingParams.dashDuration}ms) -> ${signalState.current.sequence}`);
       } else {
         // Noise - ignore this signal
-        console.log(`✗ NOISE: ${duration.toFixed(0)}ms (expected dot: ${timingParams.dotDuration}ms ±25% or dash: ${timingParams.dashDuration}ms ±25%)`);
+        console.log(`✗ NOISE: ${duration.toFixed(0)}ms (expected dot: ${timingParams.dotDuration}ms ±30% or dash: ${timingParams.dashDuration}ms ±30%)`);
       }
     }
     else if (!isSignal && !signalState.current.on && signalState.current.lastOffTime > 0) {
