@@ -1,4 +1,4 @@
-import { DOT_DURATION_MS, MORSE_CODE_MAP, MORSE_TO_LATIN } from './morseConstants';
+import { DOT_DURATION_MS } from './morseConstants.js';
 
 export class AudioHandler {
   constructor() {
@@ -12,6 +12,10 @@ export class AudioHandler {
     // For decoding
     this.threshold = 0.5; // Amplitude threshold
     this.sampleRate = 44100;
+    
+    // Fallback timing ratios for when clustering fails
+    this.DOT_FALLBACK_RATIO = 0.5;
+    this.DASH_FALLBACK_RATIO = 1.5;
   }
 
   init() {
@@ -77,10 +81,11 @@ export class AudioHandler {
   }
 
   playMorseSequence(sequence) {
-      // Play a full sequence like ".-"
+      // Play a full sequence like ".-" with improved audio quality
       this.init();
       let time = this.audioContext.currentTime;
-      const dot = 0.06; // 60ms
+      const dot = 0.08; // 80ms - closer to typical morse timing
+      const freq = 650; // 650Hz - more pleasant frequency similar to 360.mp3
       
       sequence.split('').forEach(symbol => {
           const osc = this.audioContext.createOscillator();
@@ -88,13 +93,18 @@ export class AudioHandler {
           osc.connect(gain);
           gain.connect(this.audioContext.destination);
           
-          osc.frequency.value = 600;
+          osc.frequency.value = freq;
+          osc.type = 'sine'; // Smooth sine wave
           const duration = symbol === '.' ? dot : dot * 3;
           
+          // Smooth envelope to avoid clicks
+          gain.gain.setValueAtTime(0, time);
+          gain.gain.linearRampToValueAtTime(0.3, time + 0.005); // Soft attack
+          gain.gain.setValueAtTime(0.3, time + duration - 0.01);
+          gain.gain.linearRampToValueAtTime(0, time + duration); // Soft release
+          
           osc.start(time);
-          gain.gain.setValueAtTime(1, time);
-          gain.gain.setTargetAtTime(0, time + duration, 0.005);
-          osc.stop(time + duration + 0.005);
+          osc.stop(time + duration + 0.001);
           
           time += duration + dot; // Inter-symbol gap
       });
@@ -130,12 +140,12 @@ export class AudioHandler {
         maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
       }
       
-      // Use 20% of max amplitude as threshold
-      const amplitudeThreshold = maxAmplitude * 0.2;
+      // Use 15% of max amplitude as threshold (lowered from 20% for better sensitivity)
+      const amplitudeThreshold = maxAmplitude * 0.15;
       console.log('Audio analysis - Max amplitude:', maxAmplitude.toFixed(4), 'Threshold:', amplitudeThreshold.toFixed(4));
       
       // Calculate RMS in sliding windows to detect pulses
-      const windowSize = Math.floor(sampleRate * 0.005); // 5ms windows
+      const windowSize = Math.floor(sampleRate * 0.003); // 3ms windows (reduced from 5ms for better precision)
       const pulses = [];
       const gaps = [];
       
@@ -165,7 +175,7 @@ export class AudioHandler {
               // Record gap duration
               if (lastPulseEnd > 0) {
                   const gapDuration = timeMs - lastPulseEnd;
-                  if (gapDuration > 10) {
+                  if (gapDuration > 5) { // Reduced threshold from 10ms
                       gaps.push(gapDuration);
                   }
               }
@@ -174,13 +184,13 @@ export class AudioHandler {
               isInPulse = false;
               lastPulseEnd = timeMs;
               const duration = timeMs - pulseStart;
-              if (duration > 10) { // Ignore very short noise
+              if (duration > 5) { // Reduced threshold from 10ms
                   pulses.push(duration);
               }
           }
           
-          // Stop after collecting enough pulses (after first pulse is found)
-          if (firstPulseFound && pulses.length >= 25) {
+          // Collect more pulses for better analysis
+          if (firstPulseFound && pulses.length >= 50) {
               break;
           }
       }
@@ -192,38 +202,57 @@ export class AudioHandler {
           return null;
       }
       
-      // Use first 20 pulses for analysis
-      const samplePulses = pulses.slice(0, 20);
-      const sampleGaps = gaps.slice(0, 20);
+      // Use more pulses for better statistical analysis
+      const samplePulses = pulses.slice(0, 40);
+      const sampleGaps = gaps.slice(0, 40);
       
       console.log(`Analyzing ${samplePulses.length} pulses starting from first signal`);
-      console.log('Pulse durations (ms):', samplePulses.slice(0, 10).map(p => p.toFixed(1)));
-      console.log('Gap durations (ms):', sampleGaps.slice(0, 10).map(g => g.toFixed(1)));
+      console.log('Pulse durations (ms):', samplePulses.slice(0, 15).map(p => p.toFixed(1)));
+      console.log('Gap durations (ms):', sampleGaps.slice(0, 15).map(g => g.toFixed(1)));
       
-      // Sort for quartile analysis
+      // Sort for statistical analysis
       const sortedPulses = [...samplePulses].sort((a, b) => a - b);
       const sortedGaps = [...sampleGaps].sort((a, b) => a - b);
       
-      // Use quartiles for better clustering
-      const dotDuration = sortedPulses[Math.floor(sortedPulses.length * 0.25)]; // Lower quartile
-      const dashDuration = sortedPulses[Math.floor(sortedPulses.length * 0.75)]; // Upper quartile
+      // Use median and clustering for better dot/dash separation
+      const medianPulse = sortedPulses[Math.floor(sortedPulses.length / 2)];
       
-      // Gaps: element gaps (short), character gaps (medium)
-      const elementGap = sortedGaps.length > 0 ? sortedGaps[Math.floor(sortedGaps.length * 0.25)] : dotDuration;
-      const charGap = sortedGaps.length > 0 ? sortedGaps[Math.floor(sortedGaps.length * 0.6)] : dotDuration * 3;
+      // Split pulses into dots (shorter) and dashes (longer)
+      const shortPulses = sortedPulses.filter(p => p < medianPulse);
+      const longPulses = sortedPulses.filter(p => p >= medianPulse);
+      
+      // Calculate average for each category, with fallbacks
+      const dotDuration = shortPulses.length > 0 ? 
+        shortPulses.reduce((a, b) => a + b, 0) / shortPulses.length : 
+        medianPulse * this.DOT_FALLBACK_RATIO;
+      const dashDuration = longPulses.length > 0 ? 
+        longPulses.reduce((a, b) => a + b, 0) / longPulses.length : 
+        medianPulse * this.DASH_FALLBACK_RATIO;
+      
+      // Analyze gaps more carefully
+      const medianGap = sortedGaps.length > 0 ? sortedGaps[Math.floor(sortedGaps.length / 2)] : dotDuration;
+      const shortGaps = sortedGaps.filter(g => g < medianGap * 1.5);
+      const longGaps = sortedGaps.filter(g => g >= medianGap * 1.5);
+      
+      const elementGap = shortGaps.length > 0 ? 
+        shortGaps.reduce((a, b) => a + b, 0) / shortGaps.length : dotDuration;
+      const charGap = longGaps.length > 0 ? 
+        longGaps.reduce((a, b) => a + b, 0) / longGaps.length : dotDuration * 3;
       
       const timingParams = {
           dotDuration: Math.round(dotDuration),
           dashDuration: Math.round(dashDuration),
           interSymbolGap: Math.round(elementGap),
-          interCharGap: Math.round(charGap * 0.9),
+          interCharGap: Math.round(charGap * 0.85), // Slightly reduced multiplier
           dotDashThreshold: Math.round((dotDuration + dashDuration) / 2),
-          gapThreshold: Math.round(elementGap * 1.2),
-          interWordGap: Math.round(charGap * 2),
+          gapThreshold: Math.round(elementGap * 1.5), // Increased multiplier
+          interWordGap: Math.round(charGap * 1.8),
           threshold: amplitudeThreshold / maxAmplitude // Normalize to 0-1 for RMS comparison
       };
       
       console.log('Detected timing parameters:', timingParams);
+      console.log(`  Dot avg: ${dotDuration.toFixed(1)}ms, Dash avg: ${dashDuration.toFixed(1)}ms`);
+      console.log(`  Element gap avg: ${elementGap.toFixed(1)}ms, Char gap avg: ${charGap.toFixed(1)}ms`);
       return timingParams;
   }
 

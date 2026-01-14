@@ -1,3 +1,7 @@
 node_modules
 dist
 .env
+test-decoder.js
+test-decoder.py
+*.pyc
+__pycache__

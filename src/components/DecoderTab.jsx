@@ -44,7 +44,7 @@ const DecoderTab = () => {
     }
   };
 
-  const processCharacter = (ctx, width, height) => {
+  const processCharacter = () => {
     const seq = signalState.current.sequence;
     if (!seq) return;
     
@@ -91,7 +91,7 @@ const DecoderTab = () => {
         
         // Inter-character gap - finish current character
         if (gapDuration >= timingParams.interCharGap) {
-          processCharacter(ctx, width, height);
+          processCharacter();
         }
       }
     } 
@@ -101,11 +101,11 @@ const DecoderTab = () => {
       const duration = now - signalState.current.startTime;
       signalState.current.lastOffTime = now;
       
-      // Noise filtering with ±25% tolerance (wider to account for real-time timing variance)
-      const dotMin = timingParams.dotDuration * 0.75;
-      const dotMax = timingParams.dotDuration * 1.25;
-      const dashMin = timingParams.dashDuration * 0.75;
-      const dashMax = timingParams.dashDuration * 1.25;
+      // Noise filtering with ±30% tolerance (wider to account for real-time timing variance)
+      const dotMin = timingParams.dotDuration * 0.7;
+      const dotMax = timingParams.dotDuration * 1.3;
+      const dashMin = timingParams.dashDuration * 0.7;
+      const dashMax = timingParams.dashDuration * 1.3;
       
       // Check if duration fits either dot or dash range
       const isDot = duration >= dotMin && duration <= dotMax;
@@ -119,7 +119,7 @@ const DecoderTab = () => {
         console.log(`✓ DASH: ${duration.toFixed(0)}ms (expected: ${timingParams.dashDuration}ms) -> ${signalState.current.sequence}`);
       } else {
         // Noise - ignore this signal
-        console.log(`✗ NOISE: ${duration.toFixed(0)}ms (expected dot: ${timingParams.dotDuration}ms ±25% or dash: ${timingParams.dashDuration}ms ±25%)`);
+        console.log(`✗ NOISE: ${duration.toFixed(0)}ms (expected dot: ${timingParams.dotDuration}ms ±30% or dash: ${timingParams.dashDuration}ms ±30%)`);
       }
     }
     else if (!isSignal && !signalState.current.on && signalState.current.lastOffTime > 0) {
@@ -127,7 +127,7 @@ const DecoderTab = () => {
       const silenceDuration = now - signalState.current.lastOffTime;
       
       if (signalState.current.sequence && silenceDuration >= timingParams.interCharGap) {
-        processCharacter(ctx, width, height);
+        processCharacter();
       }
     }
     
@@ -162,7 +162,7 @@ const DecoderTab = () => {
     } else {
       // Audio ended - process final character if any
       if (signalState.current.sequence) {
-        processCharacter(ctx, width, height);
+        processCharacter();
       }
       setIsPlaying(false);
     }
@@ -199,11 +199,7 @@ const DecoderTab = () => {
       audioHandler.play(() => {
         // Process final character when audio ends
         if (signalState.current.sequence) {
-          const canvas = canvasRef.current;
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            processCharacter(ctx, canvas.width, canvas.height);
-          }
+          processCharacter();
         }
         setIsPlaying(false);
       });
@@ -234,7 +230,7 @@ const DecoderTab = () => {
                 {isPlaying ? 'Stop' : 'Play'}
               </button>
               <span className="self-center text-gray-500 font-mono text-sm">
-                File: "{fileName || 'None'}"
+                File: {fileName ? `"${fileName}"` : 'None'}
                 {timingParams && <span className="ml-2 text-green-600">✓ Analyzed</span>}
               </span>
             </div>
