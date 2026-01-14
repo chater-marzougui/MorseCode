@@ -44,7 +44,7 @@ const DecoderTab = () => {
     }
   };
 
-  const processCharacter = (ctx, width, height) => {
+  const processCharacter = () => {
     const seq = signalState.current.sequence;
     if (!seq) return;
     
@@ -91,7 +91,7 @@ const DecoderTab = () => {
         
         // Inter-character gap - finish current character
         if (gapDuration >= timingParams.interCharGap) {
-          processCharacter(ctx, width, height);
+          processCharacter();
         }
       }
     } 
@@ -127,7 +127,7 @@ const DecoderTab = () => {
       const silenceDuration = now - signalState.current.lastOffTime;
       
       if (signalState.current.sequence && silenceDuration >= timingParams.interCharGap) {
-        processCharacter(ctx, width, height);
+        processCharacter();
       }
     }
     
@@ -162,7 +162,7 @@ const DecoderTab = () => {
     } else {
       // Audio ended - process final character if any
       if (signalState.current.sequence) {
-        processCharacter(ctx, width, height);
+        processCharacter();
       }
       setIsPlaying(false);
     }
@@ -199,11 +199,7 @@ const DecoderTab = () => {
       audioHandler.play(() => {
         // Process final character when audio ends
         if (signalState.current.sequence) {
-          const canvas = canvasRef.current;
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            processCharacter(ctx, canvas.width, canvas.height);
-          }
+          processCharacter();
         }
         setIsPlaying(false);
       });
@@ -234,7 +230,7 @@ const DecoderTab = () => {
                 {isPlaying ? 'Stop' : 'Play'}
               </button>
               <span className="self-center text-gray-500 font-mono text-sm">
-                File: "{fileName || 'None'}"
+                File: &quot;{fileName || 'None'}&quot;
                 {timingParams && <span className="ml-2 text-green-600">✓ Analyzed</span>}
               </span>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DecoderTab from './components/DecoderTab';
 import ReferenceTab from './components/ReferenceTab';
 

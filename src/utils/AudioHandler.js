@@ -1,4 +1,4 @@
-import { DOT_DURATION_MS, MORSE_CODE_MAP, MORSE_TO_LATIN } from './morseConstants';
+import { DOT_DURATION_MS } from './morseConstants';
 
 export class AudioHandler {
   constructor() {

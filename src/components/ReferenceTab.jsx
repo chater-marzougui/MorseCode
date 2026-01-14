@@ -1,4 +1,4 @@
-import React from 'react';
+import PropTypes from 'prop-types';
 import { audioHandler } from '../utils/AudioHandler';
 import { LATIN_TO_ARABIC, MORSE_CODE_MAP } from '../utils/morseConstants';
 
@@ -37,6 +37,10 @@ const MorseVisual = ({ code }) => {
       ))}
     </div>
   );
+};
+
+MorseVisual.propTypes = {
+  code: PropTypes.string.isRequired,
 };
 
 const ReferenceTab = () => {
