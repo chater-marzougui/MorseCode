@@ -9,7 +9,7 @@ const PRONUNCIATION = {
   'T': 'TANGO', 'M': 'MIKE', 'O': 'OSCAR', 'A': 'ALPHA',
   'U': 'UNIFORM', 'V': 'VICTOR', 'N': 'NOVEMBER', 'D': 'DELTA',
   'B': 'BRAVO', 'W': 'WHISKEY', 'J': 'JULIETT', 'G': 'GOLF',
-  'Z': 'ZULU', 'C': 'CHARLIE', 'L': 'LIMA', 'F': 'FOX-TROTT',
+  'Z': 'ZULU', 'C': 'CHARLIE', 'L': 'LIMA', 'F': 'FOXTROT',
   'Y': 'YANKEE', 'Q': 'QUEBEC', 'K': 'KILO', 'R': 'ROMEO',
   'X': 'X-RAY', 'P': 'PAPA',
   '0': 'ZERO', '1': 'UN', '2': 'DEUX', '3': 'TROIS', '4': 'QUATRE',

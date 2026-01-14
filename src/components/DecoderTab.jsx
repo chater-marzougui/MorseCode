@@ -230,7 +230,7 @@ const DecoderTab = () => {
                 {isPlaying ? 'Stop' : 'Play'}
               </button>
               <span className="self-center text-gray-500 font-mono text-sm">
-                File: &quot;{fileName || 'None'}&quot;
+                File: {fileName ? `"${fileName}"` : 'None'}
                 {timingParams && <span className="ml-2 text-green-600">✓ Analyzed</span>}
               </span>
             </div>

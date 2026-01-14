@@ -217,9 +217,13 @@ export class AudioHandler {
       const shortPulses = sortedPulses.filter(p => p < medianPulse);
       const longPulses = sortedPulses.filter(p => p >= medianPulse);
       
-      // Calculate average for each category
-      const dotDuration = shortPulses.reduce((a, b) => a + b, 0) / shortPulses.length;
-      const dashDuration = longPulses.reduce((a, b) => a + b, 0) / longPulses.length;
+      // Calculate average for each category, with fallbacks
+      const dotDuration = shortPulses.length > 0 ? 
+        shortPulses.reduce((a, b) => a + b, 0) / shortPulses.length : 
+        medianPulse * 0.5;
+      const dashDuration = longPulses.length > 0 ? 
+        longPulses.reduce((a, b) => a + b, 0) / longPulses.length : 
+        medianPulse * 1.5;
       
       // Analyze gaps more carefully
       const medianGap = sortedGaps.length > 0 ? sortedGaps[Math.floor(sortedGaps.length / 2)] : dotDuration;
